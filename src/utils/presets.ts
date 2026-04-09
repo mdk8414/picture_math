@@ -5,6 +5,23 @@ export interface Preset {
   aExpr: string;
   bExpr: string;
   coordMode: CoordMode;
+  custom?: boolean;
+}
+
+const STORAGE_KEY = "image-math-custom-presets";
+
+export function loadCustomPresets(): Preset[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    return JSON.parse(raw);
+  } catch {
+    return [];
+  }
+}
+
+export function saveCustomPresets(custom: Preset[]): void {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(custom));
 }
 
 export const presets: Preset[] = [

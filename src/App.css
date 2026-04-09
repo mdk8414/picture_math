@@ -85,6 +85,12 @@ body {
   background: var(--accent-hover);
 }
 
+.preset-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .preset-select {
   display: flex;
   align-items: center;
@@ -104,6 +110,93 @@ body {
   padding: 6px 10px;
   font-size: 0.85rem;
   cursor: pointer;
+}
+
+.save-preset-btn,
+.delete-preset-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+  padding: 5px 10px;
+  border-radius: var(--radius);
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s;
+}
+
+.save-preset-btn:hover,
+.delete-preset-btn:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
+}
+
+.delete-preset-btn {
+  color: var(--error);
+  font-size: 1rem;
+  padding: 3px 8px;
+  line-height: 1;
+}
+
+.delete-preset-btn:hover {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.save-preset-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.save-preset-row input {
+  flex: 1;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 6px 10px;
+  font-size: 0.85rem;
+}
+
+.save-preset-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.save-preset-row button {
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.save-preset-row button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.save-preset-row button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.save-preset-row button:last-child {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--text-muted);
+}
+
+.save-preset-row button:last-child:hover {
+  border-color: var(--text-muted);
+  color: var(--text);
 }
 
 .wrap-toggle {

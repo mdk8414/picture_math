@@ -4,7 +4,12 @@ import {
   applyTransform,
   CoordMode,
 } from "./utils/transform";
-import { presets } from "./utils/presets";
+import {
+  presets as builtInPresets,
+  loadCustomPresets,
+  saveCustomPresets,
+  Preset,
+} from "./utils/presets";
 import "./App.css";
 
 function App() {
@@ -15,12 +20,19 @@ function App() {
   const [bExpr, setBExpr] = useState("y");
   const [wrapMode, setWrapMode] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [customPresets, setCustomPresets] = useState<Preset[]>(loadCustomPresets);
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [presetName, setPresetName] = useState("");
 
   const originalCanvasRef = useRef<HTMLCanvasElement>(null);
   const transformedCanvasRef = useRef<HTMLCanvasElement>(null);
   const debounceRef = useRef<number>(0);
+  const presetNameRef = useRef<HTMLInputElement>(null);
 
-  const filteredPresets = presets.filter((p) => p.coordMode === coordMode);
+  const filteredBuiltIn = builtInPresets.filter((p) => p.coordMode === coordMode);
+  const filteredCustom = customPresets.filter((p) => p.coordMode === coordMode);
+  // Combined list: built-in first, then custom
+  const allFiltered = [...filteredBuiltIn, ...filteredCustom];
 
   const handleFileUpload = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -82,7 +94,7 @@ function App() {
   }, [runTransform]);
 
   const handlePreset = (idx: number) => {
-    const p = filteredPresets[idx];
+    const p = allFiltered[idx];
     if (!p) return;
     setAExpr(p.aExpr);
     setBExpr(p.bExpr);
@@ -90,7 +102,6 @@ function App() {
 
   const handleCoordModeChange = (mode: CoordMode) => {
     setCoordMode(mode);
-    // Reset to identity for the new mode
     if (mode === "cartesian") {
       setAExpr("x");
       setBExpr("y");
@@ -98,12 +109,47 @@ function App() {
       setAExpr("r");
       setBExpr("theta");
     }
+    setSavingPreset(false);
   };
 
   const handleReset = () => {
     handleCoordModeChange(coordMode);
     setWrapMode(false);
   };
+
+  const handleSavePreset = () => {
+    const name = presetName.trim();
+    if (!name) return;
+    const newPreset: Preset = {
+      name,
+      aExpr,
+      bExpr,
+      coordMode,
+      custom: true,
+    };
+    const updated = [...customPresets, newPreset];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    setSavingPreset(false);
+    setPresetName("");
+  };
+
+  const handleDeletePreset = (presetToDelete: Preset) => {
+    const updated = customPresets.filter((p) => p !== presetToDelete);
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+  };
+
+  // Focus the name input when save mode opens
+  useEffect(() => {
+    if (savingPreset) {
+      presetNameRef.current?.focus();
+    }
+  }, [savingPreset]);
+
+  const selectedIdx = allFiltered.findIndex(
+    (p) => p.aExpr === aExpr && p.bExpr === bExpr
+  );
 
   const aLabel = coordMode === "cartesian" ? "x'" : "r'";
   const bLabel = coordMode === "cartesian" ? "y'" : "\u03B8'";
@@ -154,20 +200,60 @@ function App() {
             </button>
           </div>
 
-          <div className="preset-select">
-            <label>Presets:</label>
-            <select
-              onChange={(e) => handlePreset(Number(e.target.value))}
-              value={filteredPresets.findIndex(
-                (p) => p.aExpr === aExpr && p.bExpr === bExpr
-              )}
+          <div className="preset-group">
+            <div className="preset-select">
+              <label>Presets:</label>
+              <select
+                onChange={(e) => handlePreset(Number(e.target.value))}
+                value={selectedIdx}
+              >
+                <optgroup label="Built-in">
+                  {filteredBuiltIn.map((p, i) => (
+                    <option key={`b-${p.name}`} value={i}>
+                      {p.name}
+                    </option>
+                  ))}
+                </optgroup>
+                {filteredCustom.length > 0 && (
+                  <optgroup label="Custom">
+                    {filteredCustom.map((p, i) => (
+                      <option
+                        key={`c-${p.name}-${i}`}
+                        value={filteredBuiltIn.length + i}
+                      >
+                        {p.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                )}
+              </select>
+            </div>
+
+            {/* Delete button for selected custom preset */}
+            {selectedIdx >= filteredBuiltIn.length && selectedIdx >= 0 && (
+              <button
+                className="delete-preset-btn"
+                title="Delete this custom preset"
+                onClick={() =>
+                  handleDeletePreset(
+                    filteredCustom[selectedIdx - filteredBuiltIn.length]
+                  )
+                }
+              >
+                &times;
+              </button>
+            )}
+
+            <button
+              className="save-preset-btn"
+              onClick={() => {
+                setSavingPreset(!savingPreset);
+                setPresetName("");
+              }}
+              title="Save current equations as preset"
             >
-              {filteredPresets.map((p, i) => (
-                <option key={p.name} value={i}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
+              Save
+            </button>
           </div>
 
           <label className="wrap-toggle">
@@ -183,6 +269,30 @@ function App() {
             Reset
           </button>
         </div>
+
+        {savingPreset && (
+          <div className="save-preset-row">
+            <input
+              ref={presetNameRef}
+              type="text"
+              placeholder="Preset name..."
+              value={presetName}
+              onChange={(e) => setPresetName(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleSavePreset();
+                if (e.key === "Escape") setSavingPreset(false);
+              }}
+              spellCheck={false}
+            />
+            <button
+              onClick={handleSavePreset}
+              disabled={!presetName.trim()}
+            >
+              Save
+            </button>
+            <button onClick={() => setSavingPreset(false)}>Cancel</button>
+          </div>
+        )}
 
         <div className="expr-row">
           <div className="expr-field">
